@@ -9,7 +9,7 @@ seed: 42
 # Models are instantiated using skrl's model instantiator utility
 # https://skrl.readthedocs.io/en/latest/api/utils/model_instantiators.html
 models:
-  separate: False
+  separate: True
   policy:  # see gaussian_model parameters
     class: GaussianMixin
     clip_actions: False
@@ -19,7 +19,7 @@ models:
     initial_log_std: 0.0
     network:
       - name: features_extractor
-        input: permute(STATES, (0, 3, 1, 2))  # PyTorch NHWC -> NCHW. Warning: don't permute for JAX since it expects NHWC
+        input: permute(OBSERVATIONS, (0, 3, 1, 2))  # PyTorch NHWC -> NCHW. Warning: don't permute for JAX since it expects NHWC
         layers:
           - conv2d: {out_channels: 32, kernel_size: 8, stride: 4, padding: 0}
           - conv2d: {out_channels: 64, kernel_size: 4, stride: 2, padding: 0}
@@ -31,21 +31,14 @@ models:
         layers: [512]
         activations: elu
     output: ACTIONS
-  value:  # see deterministic_model parameters
+  value:
     class: DeterministicMixin
     clip_actions: False
     network:
-      - name: features_extractor
-        input: permute(STATES, (0, 3, 1, 2))  # PyTorch NHWC -> NCHW. Warning: don't permute for JAX since it expects NHWC
-        layers:
-          - conv2d: {out_channels: 32, kernel_size: 8, stride: 4, padding: 0}
-          - conv2d: {out_channels: 64, kernel_size: 4, stride: 2, padding: 0}
-          - conv2d: {out_channels: 64, kernel_size: 3, stride: 1, padding: 0}
-          - flatten
-        activations: relu
       - name: net
-        input: features_extractor
-        layers: [512]
+        # Sem wrapper předá "critic" group jako states -> čistý vektor, žádná CNN
+        input: OBSERVATIONS
+        layers: [256, 128, 64]
         activations: elu
     output: ONE
 

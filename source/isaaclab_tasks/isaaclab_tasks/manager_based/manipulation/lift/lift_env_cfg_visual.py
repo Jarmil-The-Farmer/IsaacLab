@@ -67,8 +67,8 @@ class ObjectTableSceneCfg(InteractiveSceneCfg):
     camera = TiledCameraCfg(
         prim_path="{ENV_REGEX_NS}/Robot/panda_hand/camera_hand",
         #offset=CameraCfg.OffsetCfg(pos=(0.1, 0.0, 0.0), rot=(0.5, -0.5, 0.5, -0.5)),
-        width=128,
-        height=128,
+        width=100,
+        height=100,
         data_types=["rgb"], # Říkáme, že chceme RGB data
         spawn=sim_utils.PinholeCameraCfg(
             focal_length=24.0,
@@ -88,6 +88,17 @@ class ObjectTableSceneCfg(InteractiveSceneCfg):
 ##
 # MDP settings
 ##
+
+def debug_print_obs_on_reset(env, env_ids):
+    # seber celé pozorování v okamžiku resetu
+    obs_dict = env.observation_manager.compute()
+    try:
+        print("---- DEBUG OBS (after reset) ----")
+        for k, v in obs_dict.items():
+            print(f"{k:>10}: {tuple(v.shape)}  dtype={v.dtype}")
+        print("---------------------------------")
+    except Exception as e:
+        print(f"[debug_print_obs_on_reset] failed: {e}")
 
 
 @configclass
@@ -122,12 +133,6 @@ class ObservationsCfg:
     class PolicyCfg(ObsGroup):
         """Observations for policy group."""
 
-        #joint_pos = ObsTerm(func=mdp.joint_pos_rel)
-        #joint_vel = ObsTerm(func=mdp.joint_vel_rel)
-        #object_position = ObsTerm(func=mdp.object_position_in_robot_root_frame)
-        #target_object_position = ObsTerm(func=mdp.generated_commands, params={"command_name": "object_pose"})
-        #actions = ObsTerm(func=mdp.last_action)
-        
         camera_rgb = ObsTerm(
             func=mdp.image,
             params={"sensor_cfg": SceneEntityCfg("camera"), "data_type": "rgb"},
@@ -136,9 +141,24 @@ class ObservationsCfg:
         def __post_init__(self):
             self.enable_corruption = False
             self.concatenate_terms = True
+            #self.concatenate_dim = 2
 
-    # observation groups
+    @configclass
+    class CriticCfg(ObsGroup):
+        """Privileged observations for critic (low-dim vektory)."""
+        joint_pos = ObsTerm(func=mdp.joint_pos_rel, params={"asset_cfg": SceneEntityCfg("robot")})
+        joint_vel = ObsTerm(func=mdp.joint_vel_rel, params={"asset_cfg": SceneEntityCfg("robot")})
+        object_position = ObsTerm(func=mdp.object_position_in_robot_root_frame)
+        target_object_position = ObsTerm(func=mdp.generated_commands, params={"command_name": "object_pose"})
+        actions = ObsTerm(func=mdp.last_action)
+
+        def __post_init__(self):
+            self.enable_corruption = False
+            self.concatenate_terms = True
+
+    # groups
     policy: PolicyCfg = PolicyCfg()
+    critic: CriticCfg = CriticCfg()
 
 
 @configclass
@@ -156,6 +176,8 @@ class EventCfg:
             "asset_cfg": SceneEntityCfg("object", body_names="Object"),
         },
     )
+    
+    debug_obs_on_reset = EventTerm(func=debug_print_obs_on_reset, mode="reset")
 
 
 @configclass
@@ -222,7 +244,7 @@ class LiftEnvCfg(ManagerBasedRLEnvCfg):
     """Configuration for the lifting environment."""
 
     # Scene settings
-    scene: ObjectTableSceneCfg = ObjectTableSceneCfg(num_envs=64, env_spacing=2.5)
+    scene: ObjectTableSceneCfg = ObjectTableSceneCfg(num_envs=128, env_spacing=2.5)
     # Basic settings
     observations: ObservationsCfg = ObservationsCfg()
     actions: ActionsCfg = ActionsCfg()
