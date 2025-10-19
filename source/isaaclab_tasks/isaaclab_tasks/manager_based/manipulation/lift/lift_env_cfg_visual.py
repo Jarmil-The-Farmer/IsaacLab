@@ -83,6 +83,20 @@ class ObjectTableSceneCfg(InteractiveSceneCfg):
         ),
     )
 
+    target_square = RigidObjectCfg(
+        prim_path="{ENV_REGEX_NS}/TargetSquare",
+        init_state=RigidObjectCfg.InitialStateCfg(
+            pos=[0.7, 0.0, 0.0],  # pozice na stole
+            rot=[1.0, 0.0, 0.0, 0.0],
+        ),
+        spawn=sim_utils.CuboidCfg(
+            size=(0.08, 0.08, 0.001),
+            rigid_props=sim_utils.RigidBodyPropertiesCfg(kinematic_enabled=True),
+            collision_props=sim_utils.CollisionPropertiesCfg(collision_enabled=False),
+            visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.0, 0.5, 0.0)),
+        ),
+    )
+
 
 
 ##
@@ -188,17 +202,31 @@ class RewardsCfg:
 
     lifting_object = RewTerm(func=mdp.object_is_lifted, params={"minimal_height": 0.04}, weight=15.0)
 
-    object_goal_tracking = RewTerm(
-        func=mdp.object_goal_distance,
-        params={"std": 0.3, "minimal_height": 0.04, "command_name": "object_pose"},
-        weight=16.0,
-    )
+    # place = RewTerm(
+    #     func=mdp.is_object_placed,
+    #     weight=20.0,
+    #     params={"object_cfg": SceneEntityCfg("object"), "target_square_cfg": SceneEntityCfg("target_square")},
+    # )
 
-    object_goal_tracking_fine_grained = RewTerm(
-        func=mdp.object_goal_distance,
-        params={"std": 0.05, "minimal_height": 0.04, "command_name": "object_pose"},
-        weight=5.0,
-    )
+    # move_to_target = RewTerm(
+    #     func=mdp.object_target_distance,
+    #     weight=10.0,
+    #     params={"object_cfg": SceneEntityCfg("object"), "target_square_cfg": SceneEntityCfg("target_square"), "minimal_height": 0.04},
+    # )
+
+
+
+    # object_goal_tracking = RewTerm(
+    #     func=mdp.object_goal_distance,
+    #     params={"std": 0.3, "minimal_height": 0.04, "command_name": "object_pose"},
+    #     weight=16.0,
+    # )
+
+    # object_goal_tracking_fine_grained = RewTerm(
+    #     func=mdp.object_goal_distance,
+    #     params={"std": 0.05, "minimal_height": 0.04, "command_name": "object_pose"},
+    #     weight=5.0,
+    # )
 
     # action penalty
     action_rate = RewTerm(func=mdp.action_rate_l2, weight=-1e-4)
@@ -238,7 +266,7 @@ class CurriculumCfg:
 # Environment configuration
 ##
 
-
+import torch
 @configclass
 class LiftEnvCfg(ManagerBasedRLEnvCfg):
     """Configuration for the lifting environment."""

@@ -15,6 +15,8 @@ from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
 from isaaclab_tasks.manager_based.manipulation.lift import mdp
 from isaaclab_tasks.manager_based.manipulation.lift.lift_env_cfg_visual import LiftEnvCfg
 
+import isaaclab.sim as sim_utils
+
 ##
 # Pre-defined configs
 ##
@@ -45,22 +47,57 @@ class FrankaCubeLiftEnvCfg(LiftEnvCfg):
         self.commands.object_pose.body_name = "panda_hand"
 
         # Set Cube as object
+        # self.scene.object = RigidObjectCfg(
+        #     prim_path="{ENV_REGEX_NS}/Object",
+        #     init_state=RigidObjectCfg.InitialStateCfg(pos=[0.5, 0, 0.055], rot=[1, 0, 0, 0]),
+        #     spawn=UsdFileCfg(
+        #         usd_path=f"{ISAAC_NUCLEUS_DIR}/Props/Blocks/DexCube/dex_cube_instanceable.usd",
+        #         scale=(0.8, 0.8, 0.8),
+        #         rigid_props=RigidBodyPropertiesCfg(
+        #             solver_position_iteration_count=16,
+        #             solver_velocity_iteration_count=1,
+        #             max_angular_velocity=1000.0,
+        #             max_linear_velocity=1000.0,
+        #             max_depenetration_velocity=5.0,
+        #             disable_gravity=False,
+        #         ),
+        #     ),
+        # )
+
         self.scene.object = RigidObjectCfg(
-            prim_path="{ENV_REGEX_NS}/Object",
+            prim_path="/World/envs/env_.*/Object",
             init_state=RigidObjectCfg.InitialStateCfg(pos=[0.5, 0, 0.055], rot=[1, 0, 0, 0]),
-            spawn=UsdFileCfg(
-                usd_path=f"{ISAAC_NUCLEUS_DIR}/Props/Blocks/DexCube/dex_cube_instanceable.usd",
-                scale=(0.8, 0.8, 0.8),
-                rigid_props=RigidBodyPropertiesCfg(
-                    solver_position_iteration_count=16,
-                    solver_velocity_iteration_count=1,
-                    max_angular_velocity=1000.0,
-                    max_linear_velocity=1000.0,
-                    max_depenetration_velocity=5.0,
+            spawn=sim_utils.CuboidCfg(
+                size=(0.06, 0.06, 0.06),
+                activate_contact_sensors=True,
+                rigid_props=sim_utils.RigidBodyPropertiesCfg(
                     disable_gravity=False,
+                    retain_accelerations=False,
+                    linear_damping=0.03,           # ↑ o trochu víc tlumení → míň ujíždí z úchopu
+                    angular_damping=0.03,          # ↑ snáz “sedne” mezi prsty
+                    solver_position_iteration_count=24,
+                    solver_velocity_iteration_count=4,
+                    max_depenetration_velocity=1.0,
+                ),
+                mass_props=sim_utils.MassPropertiesCfg(mass=0.40),
+                collision_props=sim_utils.CollisionPropertiesCfg(
+                    collision_enabled=True,
+                    contact_offset=0.0015,
+                    rest_offset=0.0,
+                ),
+                visual_material=sim_utils.PreviewSurfaceCfg(
+                    diffuse_color=(1.0, 0.0, 0.0), metallic=0,
+                ),
+                physics_material=sim_utils.RigidBodyMaterialCfg(
+                    friction_combine_mode="min",    # s nízkotřecím stolem stále klouže
+                    restitution_combine_mode="min",
+                    static_friction=2.8,            # ↑ pevnější grip
+                    dynamic_friction=2.2,           # ↑ menší skluz v ruce
+                    restitution=0.0,
                 ),
             ),
         )
+
 
         # Listens to the required transforms
         marker_cfg = FRAME_MARKER_CFG.copy()
