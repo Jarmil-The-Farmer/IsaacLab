@@ -25,13 +25,6 @@ def object_is_lifted(
     object: RigidObject = env.scene[object_cfg.name]
     res =  torch.where(object.data.root_pos_w[:, 2] > minimal_height, 1.0, 0.0)
 
-    # enable reward if lifted at least once in the episode
-    # print("Lifted res:", res)
-    if False:
-        print("Lifted weight set")
-        reward_term = env.reward_manager.get_term_cfg("move_to_target")
-        reward_term.weight = 10.0
-
     return res
 
 
@@ -84,7 +77,10 @@ def object_target_distance(
     target_square_cfg: SceneEntityCfg = SceneEntityCfg("target_square"),
     minimal_height: float = 0.04,
 ) -> torch.Tensor:
-    """Reward function that encourages the object to move closer to the target square using tanh kernel."""
+    """
+    Reward function that encourages the object to move closer to the target square
+    using tanh kernel — active only when the object is lifted.
+    """
     # Extract entities
     object: RigidObject = env.scene[object_cfg.name]
     target_square: RigidObject = env.scene[target_square_cfg.name]
@@ -96,14 +92,14 @@ def object_target_distance(
     # Compute Euclidean distance between object and target
     dist = torch.norm(object_pos_w - target_pos_w, dim=1)  # (num_envs,)
 
-    lifted_res = object_is_lifted(env, minimal_height, object_cfg=object_cfg)
-    # Reward only if the object is lifted
-    dist = dist * lifted_res
+    # Check if object is lifted
+    lifted_res = object_is_lifted(env, minimal_height, object_cfg=object_cfg)  # (num_envs,)
 
-    print("Distance:", dist)
+    # Compute reward only if lifted
+    reward = 1 - torch.tanh(dist / std)
+    reward = reward * lifted_res.float()  # zero reward if not lifted
 
-    # Convert distance to a reward in range (0, 1)
-    return 1 - torch.tanh(dist / std)
+    return reward
 
 
 def is_object_placed(

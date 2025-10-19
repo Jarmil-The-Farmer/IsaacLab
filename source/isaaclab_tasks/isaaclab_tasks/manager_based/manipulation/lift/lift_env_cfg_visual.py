@@ -123,7 +123,7 @@ class CommandsCfg:
         asset_name="robot",
         body_name=MISSING,  # will be set by agent env cfg
         resampling_time_range=(5.0, 5.0),
-        debug_vis=True,
+        debug_vis=False, # enable visualization of the command target
         ranges=mdp.UniformPoseCommandCfg.Ranges(
             pos_x=(0.4, 0.6), pos_y=(-0.25, 0.25), pos_z=(0.25, 0.5), roll=(0.0, 0.0), pitch=(0.0, 0.0), yaw=(0.0, 0.0)
         ),
@@ -157,22 +157,8 @@ class ObservationsCfg:
             self.concatenate_terms = True
             #self.concatenate_dim = 2
 
-    @configclass
-    class CriticCfg(ObsGroup):
-        """Privileged observations for critic (low-dim vektory)."""
-        joint_pos = ObsTerm(func=mdp.joint_pos_rel, params={"asset_cfg": SceneEntityCfg("robot")})
-        joint_vel = ObsTerm(func=mdp.joint_vel_rel, params={"asset_cfg": SceneEntityCfg("robot")})
-        object_position = ObsTerm(func=mdp.object_position_in_robot_root_frame)
-        target_object_position = ObsTerm(func=mdp.generated_commands, params={"command_name": "object_pose"})
-        actions = ObsTerm(func=mdp.last_action)
-
-        def __post_init__(self):
-            self.enable_corruption = False
-            self.concatenate_terms = True
-
     # groups
     policy: PolicyCfg = PolicyCfg()
-    critic: CriticCfg = CriticCfg()
 
 
 @configclass
@@ -200,7 +186,8 @@ class RewardsCfg:
 
     reaching_object = RewTerm(func=mdp.object_ee_distance, params={"std": 0.1}, weight=1.0)
 
-    lifting_object = RewTerm(func=mdp.object_is_lifted, params={"minimal_height": 0.04}, weight=15.0)
+    # TODO calc best middle distance
+    lifting_object = RewTerm(func=mdp.object_is_lifted, params={"minimal_height": 0.08}, weight=15.0)
 
     # place = RewTerm(
     #     func=mdp.is_object_placed,
@@ -208,11 +195,11 @@ class RewardsCfg:
     #     params={"object_cfg": SceneEntityCfg("object"), "target_square_cfg": SceneEntityCfg("target_square")},
     # )
 
-    # move_to_target = RewTerm(
-    #     func=mdp.object_target_distance,
-    #     weight=10.0,
-    #     params={"object_cfg": SceneEntityCfg("object"), "target_square_cfg": SceneEntityCfg("target_square"), "minimal_height": 0.04},
-    # )
+    move_to_target = RewTerm(
+        func=mdp.object_target_distance,
+        weight=10.0,
+        params={"object_cfg": SceneEntityCfg("object"), "target_square_cfg": SceneEntityCfg("target_square"), "minimal_height": 0.08},
+    )
 
 
 

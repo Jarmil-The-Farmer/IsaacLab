@@ -106,7 +106,7 @@ class FrankaCubeLiftEnvCfg(LiftEnvCfg):
         self.scene.ee_frame = FrameTransformerCfg(
             prim_path="{ENV_REGEX_NS}/Robot/panda_link0",
             debug_vis=False,
-            visualizer_cfg=marker_cfg,
+            #visualizer_cfg=marker_cfg, # enable frame marker visualization
             target_frames=[
                 FrameTransformerCfg.FrameCfg(
                     prim_path="{ENV_REGEX_NS}/Robot/panda_hand",

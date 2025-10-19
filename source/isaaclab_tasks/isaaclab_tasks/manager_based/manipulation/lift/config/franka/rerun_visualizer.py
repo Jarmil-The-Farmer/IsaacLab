@@ -8,7 +8,7 @@ from datetime import datetime
 os.environ["RUST_LOG"] = "error"
 
 class RerunLogger:
-    def __init__(self, rewards_plots, prefix = "", IdxRangeBoundary = 3000, memory_limit = "512MB"):
+    def __init__(self, rewards_plots=[], prefix = "", IdxRangeBoundary = 3000, memory_limit = "512MB"):
         self.prefix = prefix
         self.plots = rewards_plots
         self.IdxRangeBoundary = IdxRangeBoundary
@@ -35,8 +35,34 @@ class RerunLogger:
                 )
             ],
             plot_legend = rrb.PlotLegend(visible = True),
-            axis_y=rrb.ScalarAxis(range=(0, 30))
+            axis_y=rrb.ScalarAxis(range=(0, 1))
         )
+        views.append(view)
+
+        view = rrb.TimeSeriesView(
+            origin = "/rewards_env0",
+            time_ranges=[
+                rrb.VisibleTimeRange(
+                    "step",
+                    start = rrb.TimeRangeBoundary.cursor_relative(seq = -self.IdxRangeBoundary),
+                    end = rrb.TimeRangeBoundary.cursor_relative(),
+                )
+            ],
+            plot_legend = rrb.PlotLegend(visible = True),
+            axis_y=rrb.ScalarAxis(range=(0, 20))
+        )
+        views.append(view)
+
+        view = rrb.Spatial2DView(
+            origin = "/image_env0",
+            time_ranges=[
+                    rrb.VisibleTimeRange(
+                        "step",
+                        start = rrb.TimeRangeBoundary.cursor_relative(seq = -self.IdxRangeBoundary),
+                        end = rrb.TimeRangeBoundary.cursor_relative(),
+                    )
+                ],
+            )
         views.append(view)
 
         # image_plot_paths = [
@@ -73,7 +99,16 @@ class RerunLogger:
 
         rewards = data.get('rewards', {}) or {}
         for reward_key, reward_val in rewards.items():
-            rr.log(f"/rewards/{reward_key}", rr.Scalars(reward_val))
+            rr.log(f"/rewards/{reward_key}", rr.Scalars(reward_val), rr.SeriesLines(widths=[2]))
+
+        # # Log rewards per environment 0
+        rewards = data.get('rewards_env0', {}) or {}
+        for reward_key, reward_val in rewards.items():
+            rr.log(f"/rewards_env0/{reward_key}", rr.Scalars(reward_val), rr.SeriesLines(widths=[2]))
+
+    def log_image(self, image):
+        rr.log("/image_env0", rr.Image(image))
+
 
         # Log states
         # states = item_data.get('states', {}) or {}
