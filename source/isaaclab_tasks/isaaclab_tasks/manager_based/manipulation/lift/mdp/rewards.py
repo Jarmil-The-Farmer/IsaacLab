@@ -101,7 +101,6 @@ def object_target_distance(
 
     return reward
 
-
 def is_object_placed(
     env: ManagerBasedRLEnv,
     object_cfg: SceneEntityCfg = SceneEntityCfg("object"),
@@ -109,35 +108,35 @@ def is_object_placed(
     xy_tol: float = 0.03,
     z_tol: float = 0.03,
     vel_tol: float = 0.05,
-    env_ids: torch.Tensor | None = None,
 ) -> torch.Tensor:
     """
-    Check if the object is successfully placed within the target square.
+    Returns a tensor (num_envs,) with 1.0 if the object is placed within the target square
+    and 0.0 otherwise.
 
-    Success is defined as:
-    - Object center within (xy_tol, z_tol) of target center.
-    - Object velocity below vel_tol (object is stable).
+    Conditions:
+    - XY position of object center within xy_tol of target center
+    - Z distance within z_tol
+    - Object velocity below vel_tol (object is stable)
     """
-    # Select environment IDs (default: all envs)
-    if env_ids is None:
-        env_ids = torch.arange(env.num_envs, device=env.device)
-
     # Extract world positions and velocities
     object: RigidObject = env.scene[object_cfg.name]
     target_square: RigidObject = env.scene[target_square_cfg.name]
 
-    obj_pos = object.data.root_pos_w[env_ids]     # (num_envs, 3)
-    obj_vel = object.data.root_vel_w[env_ids]     # (num_envs, 3)
-    tgt_pos = target_square.data.root_pos_w[env_ids]  # (num_envs, 3)
+    obj_pos = object.data.root_pos_w        # (num_envs, 3)
+    obj_vel = object.data.root_vel_w        # (num_envs, 3)
+    tgt_pos = target_square.data.root_pos_w # (num_envs, 3)
 
-    # Check position tolerance
-    xy_ok = torch.norm(obj_pos[:, :2] - tgt_pos[:, :2], dim=-1) < xy_tol
-    z_ok = torch.abs(obj_pos[:, 2] - tgt_pos[:, 2]) < z_tol
+    # Compute distances
+    xy_dist = torch.norm(obj_pos[:, :2] - tgt_pos[:, :2], dim=-1)  # (num_envs,)
+    z_dist = torch.abs(obj_pos[:, 2] - tgt_pos[:, 2])              # (num_envs,)
+    vel_mag = torch.norm(obj_vel, dim=-1)                          # (num_envs,)
 
-    # Check if object is nearly stationary
-    still = torch.norm(obj_vel, dim=-1) < vel_tol
+    # Convert to float masks
+    xy_ok = (xy_dist < xy_tol).float()
+    z_ok = (z_dist < z_tol).float()
+    still = (vel_mag < vel_tol).float()
 
-    # Combine all success conditions
-    is_success = (xy_ok & z_ok & still).bool()
+    # Combine (1.0 if all three true)
+    is_success = xy_ok * z_ok * still
 
     return is_success

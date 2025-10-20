@@ -67,8 +67,8 @@ class ObjectTableSceneCfg(InteractiveSceneCfg):
     camera = TiledCameraCfg(
         prim_path="{ENV_REGEX_NS}/Robot/panda_hand/camera_hand",
         #offset=CameraCfg.OffsetCfg(pos=(0.1, 0.0, 0.0), rot=(0.5, -0.5, 0.5, -0.5)),
-        width=100,
-        height=100,
+        width=128,
+        height=128,
         data_types=["rgb"], # Říkáme, že chceme RGB data
         spawn=sim_utils.PinholeCameraCfg(
             focal_length=24.0,
@@ -90,7 +90,7 @@ class ObjectTableSceneCfg(InteractiveSceneCfg):
             rot=[1.0, 0.0, 0.0, 0.0],
         ),
         spawn=sim_utils.CuboidCfg(
-            size=(0.08, 0.08, 0.001),
+            size=(0.15, 0.15, 0.001),
             rigid_props=sim_utils.RigidBodyPropertiesCfg(kinematic_enabled=True),
             collision_props=sim_utils.CollisionPropertiesCfg(collision_enabled=False),
             visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.0, 0.5, 0.0)),
@@ -103,16 +103,17 @@ class ObjectTableSceneCfg(InteractiveSceneCfg):
 # MDP settings
 ##
 
-def debug_print_obs_on_reset(env, env_ids):
+def debug_print_on_reset(env, env_ids):
+    pass
     # seber celé pozorování v okamžiku resetu
-    obs_dict = env.observation_manager.compute()
-    try:
-        print("---- DEBUG OBS (after reset) ----")
-        for k, v in obs_dict.items():
-            print(f"{k:>10}: {tuple(v.shape)}  dtype={v.dtype}")
-        print("---------------------------------")
-    except Exception as e:
-        print(f"[debug_print_obs_on_reset] failed: {e}")
+    # obs_dict = env.observation_manager.compute()
+    # try:
+    #     print("---- DEBUG OBS (after reset) ----")
+    #     for k, v in obs_dict.items():
+    #         print(f"{k:>10}: {tuple(v.shape)}  dtype={v.dtype}")
+    #     print("---------------------------------")
+    # except Exception as e:
+    #     print(f"[debug_print_obs_on_reset] failed: {e}")
 
 
 @configclass
@@ -177,7 +178,7 @@ class EventCfg:
         },
     )
     
-    debug_obs_on_reset = EventTerm(func=debug_print_obs_on_reset, mode="reset")
+    debug_obs_on_reset = EventTerm(func=debug_print_on_reset, mode="reset")
 
 
 @configclass
@@ -189,15 +190,15 @@ class RewardsCfg:
     # TODO calc best middle distance
     lifting_object = RewTerm(func=mdp.object_is_lifted, params={"minimal_height": 0.08}, weight=15.0)
 
-    # place = RewTerm(
-    #     func=mdp.is_object_placed,
-    #     weight=20.0,
-    #     params={"object_cfg": SceneEntityCfg("object"), "target_square_cfg": SceneEntityCfg("target_square")},
-    # )
+    place = RewTerm(
+        func=mdp.is_object_placed,
+        weight=40.0,
+        params={"object_cfg": SceneEntityCfg("object"), "target_square_cfg": SceneEntityCfg("target_square")},
+    )
 
     move_to_target = RewTerm(
         func=mdp.object_target_distance,
-        weight=10.0,
+        weight=20.0,
         params={"object_cfg": SceneEntityCfg("object"), "target_square_cfg": SceneEntityCfg("target_square"), "minimal_height": 0.08},
     )
 
@@ -241,11 +242,11 @@ class CurriculumCfg:
     """Curriculum terms for the MDP."""
 
     action_rate = CurrTerm(
-        func=mdp.modify_reward_weight, params={"term_name": "action_rate", "weight": -1e-1, "num_steps": 10000}
+        func=mdp.modify_reward_weight, params={"term_name": "action_rate", "weight": -1e-1, "num_steps": 20000}
     )
 
     joint_vel = CurrTerm(
-        func=mdp.modify_reward_weight, params={"term_name": "joint_vel", "weight": -1e-1, "num_steps": 10000}
+        func=mdp.modify_reward_weight, params={"term_name": "joint_vel", "weight": -1e-1, "num_steps": 20000}
     )
 
 
@@ -274,7 +275,7 @@ class LiftEnvCfg(ManagerBasedRLEnvCfg):
         """Post initialization."""
         # general settings
         self.decimation = 2
-        self.episode_length_s = 4.0 # def 5
+        self.episode_length_s = 6 # def 5
         # simulation settings
         self.sim.dt = 0.01  # 100Hz
         self.sim.render_interval = self.decimation
