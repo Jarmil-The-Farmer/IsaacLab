@@ -87,3 +87,15 @@ gym.register(
     },
     disable_env_checker=True,
 )
+
+
+gym.register(
+    id="Isaac-Lift-Cube-Franka-v0-Visual-IK",
+    # entry_point="isaaclab.envs:ManagerBasedRLEnv",
+    entry_point=f"{__name__}.custom_manager_env:CustomManagerBasedRLEnv",
+    kwargs={
+        "env_cfg_entry_point": f"{__name__}.ik_rel_env_cfg_visual:FrankaCubeLiftEnvCfg",
+        "robomimic_bc_cfg_entry_point": os.path.join(agents.__path__[0], "robomimic/bc.json"),
+    },
+    disable_env_checker=True,
+)

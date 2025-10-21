@@ -108,7 +108,7 @@ class ObjectTableSceneCfg(InteractiveSceneCfg):
     target_square = RigidObjectCfg(
         prim_path="{ENV_REGEX_NS}/TargetSquare",
         init_state=RigidObjectCfg.InitialStateCfg(
-            pos=[0.6, 0.0, 0.0],  # pozice na stole
+            pos=[0.7, 0.0, 0.0],  # pozice na stole
             rot=[1.0, 0.0, 0.0, 0.0],
         ),
         spawn=sim_utils.CuboidCfg(
@@ -142,15 +142,15 @@ def debug_print_on_reset(env, env_ids):
 class CommandsCfg:
     """Command terms for the MDP."""
 
-    # object_pose = mdp.UniformPoseCommandCfg(
-    #     asset_name="robot",
-    #     body_name=MISSING,  # will be set by agent env cfg
-    #     resampling_time_range=(5.0, 5.0),
-    #     debug_vis=False, # enable visualization of the command target
-    #     ranges=mdp.UniformPoseCommandCfg.Ranges(
-    #         pos_x=(0.4, 0.6), pos_y=(-0.25, 0.25), pos_z=(0.25, 0.5), roll=(0.0, 0.0), pitch=(0.0, 0.0), yaw=(0.0, 0.0)
-    #     ),
-    # )
+    object_pose = mdp.UniformPoseCommandCfg(
+        asset_name="robot",
+        body_name=MISSING,  # will be set by agent env cfg
+        resampling_time_range=(5.0, 5.0),
+        debug_vis=False, # enable visualization of the command target
+        ranges=mdp.UniformPoseCommandCfg.Ranges(
+            pos_x=(0.4, 0.6), pos_y=(-0.25, 0.25), pos_z=(0.25, 0.5), roll=(0.0, 0.0), pitch=(0.0, 0.0), yaw=(0.0, 0.0)
+        ),
+    )
 
 
 @configclass
@@ -216,18 +216,18 @@ class RewardsCfg:
     reaching_object = RewTerm(func=mdp.object_ee_distance, params={"std": 0.1}, weight=1.0)
 
     # TODO calc best middle distance
-    lifting_object = RewTerm(func=mdp.object_is_lifted, params={"minimal_height": 0.08}, weight=15.0)
+    lifting_object = RewTerm(func=mdp.object_is_lifted, params={"minimal_height": 0.05}, weight=15.0)
 
-    # place = RewTerm(
-    #     func=mdp.is_object_placed,
-    #     weight=40.0,
-    #     params={"object_cfg": SceneEntityCfg("object"), "target_square_cfg": SceneEntityCfg("target_square")},
-    # )
+    place = RewTerm(
+        func=mdp.is_object_placed,
+        weight=40.0,
+        params={"object_cfg": SceneEntityCfg("object"), "target_square_cfg": SceneEntityCfg("target_square")},
+    )
 
     move_to_target = RewTerm(
         func=mdp.object_target_distance,
         weight=20.0,
-        params={"object_cfg": SceneEntityCfg("object"), "target_square_cfg": SceneEntityCfg("target_square"), "minimal_height": 0.08},
+        params={"object_cfg": SceneEntityCfg("object"), "target_square_cfg": SceneEntityCfg("target_square"), "minimal_height": 0.05},
     )
 
 
