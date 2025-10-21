@@ -60,14 +60,22 @@ class CustomManagerBasedRLEnv(ManagerBasedRLEnv):
         #   [ 0.1463,  0.1528,  0.0556],
 
         
-        # Předpokládáme, že ve step() máš proměnnou obs
-        rgb_tensor = obs["policy"][0]  # vezmeme env 0 → shape (H, W, 3)
+        # # Předpokládáme, že ve step() máš proměnnou obs
+        # rgb_tensor = obs["policy"][0]  # vezmeme env 0 → shape (H, W, 3)
 
-        # Převod z 0–1 → 0–255 a na numpy uint8
-        rgb_image = (rgb_tensor.clamp(0, 1) * 255).to(torch.uint8).cpu().numpy()
+        # # Převod z 0–1 → 0–255 a na numpy uint8
+        # rgb_image = (rgb_tensor.clamp(0, 1) * 255).to(torch.uint8).cpu().numpy()
 
-        # Zalogi do Rerun (např. pod jménem "env0/rgb")
-        self.rerun_logger.log_image(rgb_image)
+        # # Zalogi do Rerun (např. pod jménem "env0/rgb")
+        # self.rerun_logger.log_image(rgb_image)
+
+        hand_camera_tensor = obs["policy"]["hand_camera"][0]  # vezmeme env 0 → shape (H, W, 3)
+        hand_camera_image = (hand_camera_tensor.clamp(0, 1) * 255).to(torch.uint8).cpu().numpy()
+        self.rerun_logger.log_image("hand_camera", hand_camera_image)
+
+        top_camera_tensor = obs["policy"]["top_camera"][0]  # vezmeme env 0 → shape (H, W, 3)
+        top_camera_image = (top_camera_tensor.clamp(0, 1) * 255).to(torch.uint8).cpu().numpy()
+        self.rerun_logger.log_image2("top_camera", top_camera_image)
 
 
         return obs, rew, terminated, truncated, info

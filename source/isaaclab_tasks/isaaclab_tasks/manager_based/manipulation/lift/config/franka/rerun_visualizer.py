@@ -65,6 +65,18 @@ class RerunLogger:
             )
         views.append(view)
 
+        view = rrb.Spatial2DView(
+            origin = "/image2_env0",
+            time_ranges=[
+                    rrb.VisibleTimeRange(
+                        "step",
+                        start = rrb.TimeRangeBoundary.cursor_relative(seq = -self.IdxRangeBoundary),
+                        end = rrb.TimeRangeBoundary.cursor_relative(),
+                    )
+                ],
+            )
+        views.append(view)
+
         # image_plot_paths = [
         #                     f"{self.prefix}colors/color_0",
         #                     f"{self.prefix}colors/color_1",
@@ -106,8 +118,11 @@ class RerunLogger:
         for reward_key, reward_val in rewards.items():
             rr.log(f"/rewards_env0/{reward_key}", rr.Scalars(reward_val), rr.SeriesLines(widths=[2]))
 
-    def log_image(self, image):
-        rr.log("/image_env0", rr.Image(image))
+    def log_image(self, name: str, image):
+        rr.log("/image_env0/" + name, rr.Image(image))
+
+    def log_image2(self, name: str, image):
+        rr.log("/image2_env0/" + name, rr.Image(image))
 
 
         # Log states
